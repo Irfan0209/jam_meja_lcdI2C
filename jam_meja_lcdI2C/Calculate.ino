@@ -1,4 +1,10 @@
+//////////hijriyah
+#define epochHijriah          1948439.5f //math.harvard.edu
+#define tambahKurangHijriah   0
+uint8_t maxday[]        = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+uint8_t    trigJam       = 17;
+uint8_t    trigMenit     = 30;
 
 //////hijiriyah voidku/////////////////////////////////////////////////
 void islam() {
@@ -120,4 +126,24 @@ int jumlahhari() {
   int kab = (y - 1969) / 4;  // Hitung langsung jumlah tahun kabisat
 
   return (ht + hs + kab);
+}
+
+// PARAMETER PENGHITUNGAN JADWAL SHOLAT
+void JadwalSholat() {
+  
+  RtcDateTime now = Rtc.GetDateTime();
+
+  int tahun = now.Year();
+  int bulan = now.Month();
+  int tanggal = now.Day();
+
+  Serial.println("calcualat run");
+  set_calc_method(Karachi);
+  set_asr_method(Shafii);
+  set_high_lats_adjust_method(AngleBased);
+  set_fajr_angle(20);
+  set_isha_angle(18);
+
+  get_prayer_times(tahun, bulan, tanggal, config.latitude, config.longitude, config.zonawaktu, times);
+ //yield();
 }
