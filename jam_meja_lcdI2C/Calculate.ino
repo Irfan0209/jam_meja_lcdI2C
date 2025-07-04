@@ -14,10 +14,10 @@ void islam() {
   // Serial.println("trigJam  :" + String(trigJam));
   // Serial.println("trigMenit:" + String(trigMenit));
 
-  RtcDateTime now = Rtc.GetDateTime();
-  tanggalMasehi.tanggal = now.Day();
-  tanggalMasehi.bulan = now.Month();
-  tanggalMasehi.tahun = now.Year() - 2000;
+  //RtcDateTime now = Rtc.GetDateTime();
+  tanggalMasehi.tanggal = day();
+  tanggalMasehi.bulan = month();
+  tanggalMasehi.tahun = year() - 2000;
 
   uint32_t jumlahHari;
   double jumlahHariMatahari;
@@ -112,10 +112,10 @@ void printKonversi(TanggalDanWaktu tanggalMasehi, Tanggal
 
 // digunakan untuk menghitung hari pasaran
 int jumlahhari() { 
-  RtcDateTime now = Rtc.GetDateTime();
-  int d = now.Day();
-  int m = now.Month();
-  int y = now.Year();
+  //RtcDateTime now = Rtc.GetDateTime();
+  int d = day();
+  int m = month();
+  int y = year();
 
   static const int hb[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
   int ht = (y - 1970) * 365 - 1;
@@ -131,11 +131,11 @@ int jumlahhari() {
 // PARAMETER PENGHITUNGAN JADWAL SHOLAT
 void JadwalSholat() {
   
-  RtcDateTime now = Rtc.GetDateTime();
+  //RtcDateTime now = Rtc.GetDateTime();
 
-  int tahun = now.Year();
-  int bulan = now.Month();
-  int tanggal = now.Day();
+  int tahun = year();//now.Year();
+  int bulan = month();//now.Month();
+  int tanggal = day();
 
   Serial.println("calcualat run");
   set_calc_method(Karachi);

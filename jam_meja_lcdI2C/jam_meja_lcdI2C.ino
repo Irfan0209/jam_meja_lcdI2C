@@ -2,17 +2,26 @@
 #include <Wire.h>
 #include <RtcDS3231.h>
 #include <LiquidCrystal_I2C.h>
+#include "TimeLib.h"
+
+#include <NTPClient.h>
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+#include <WiFiManager.h>
 
 #include "PrayerTimes.h"
 
+#define BUZZ  D4 // PIN BUZZER
+
 //create object
 LiquidCrystal_I2C lcd(0x27, 16, 2);
-RtcDS3231<TwoWire> Rtc(Wire);
-RtcDateTime now;
+//RtcDS3231<TwoWire> Rtc(Wire);
+//RtcDateTime now;
 double times[sizeof(TimeName)/sizeof(char*)];
 
-
-
+const long utcOffsetInSeconds = 25200;
+WiFiUDP ntpUDP;
+NTPClient Clock(ntpUDP, "asia.pool.ntp.org", utcOffsetInSeconds);
 
 struct Config {
   uint8_t chijir;
@@ -65,42 +74,141 @@ Config config;
 uint8_t dataIhty[]      = {3,0,3,3,0,3,2};
 uint8_t   sholatNow     = -1;
 bool      reset_x       = 0; 
-uint8_t   list          = 0; 
+uint8_t   suhu          = 30; 
 bool      adzan         = 0;
 bool      stateBuzzer   = 1;
 
+enum Show{
+  ANIM_HOME,
+  ANIM_ADZAN,
+  ANIM_NOTIF_CON
+};
+
+Show show = ANIM_HOME;
 
 
 void setup() {
+  Serial.begin(115200);
+  pinMode(BUZZ,OUTPUT);
   lcd.begin();
   lcd.backlight();
-   
-   int rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
-    if (rtn != 0) {
-      Serial.println(F("I2C bus error. Could not clear"));
-      if (rtn == 1) {
-        Serial.println(F("SCL clock line held low"));
-      } else if (rtn == 2) {
-        Serial.println(F("SCL clock line held low by slave clock stretch"));
-      } else if (rtn == 3) {
-        Serial.println(F("SDA data line held low"));
-      }
-    } 
-    else { // bus clear, re-enable Wire, now can start Wire Arduino master
-      Wire.begin();
-    }
-  
-  Rtc.Begin();
-  Rtc.Enable32kHzPin(false);
-  Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone); 
+  lcd.setCursor(1,0);
+  dwCtr(0,"CONNECTING....");
+  WiFiManager wm;
+  bool res;
+  res = wm.autoConnect("JAM JWS"); // password protected ap
 
+  if(!res) {
+    Serial.println("Failed to connect");
+    // ESP.restart();
+  } 
+  else {
+    Clock.begin();//NTP
+    Clock.update();
+    setTime(Clock.getHours(),Clock.getMinutes(),Clock.getSeconds(),13,04,2025); 
+    Serial.println("connected...yeey :)");
+  }
+  
+//   int rtn = I2C_ClearBus(); // clear the I2C bus first before calling Wire.begin()
+//    if (rtn != 0) {
+//      Serial.println(F("I2C bus error. Could not clear"));
+//      if (rtn == 1) {
+//        Serial.println(F("SCL clock line held low"));
+//      } else if (rtn == 2) {
+//        Serial.println(F("SCL clock line held low by slave clock stretch"));
+//      } else if (rtn == 3) {
+//        Serial.println(F("SDA data line held low"));
+//      }
+//    } 
+//    else { // bus clear, re-enable Wire, now can start Wire Arduino master
+//      Wire.begin();
+//    }
+//  
+//  Rtc.Begin();
+//  Rtc.Enable32kHzPin(false);
+//  Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone); 
+JadwalSholat();
+lcd.clear();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+islam();
+check();
+
+switch(show){
+  case ANIM_HOME :
+    showDisplay();
+    jadwalSholat();
+  break;
+
+  case ANIM_ADZAN :
+    drawAzzan();
+  break;
+
+  case ANIM_NOTIF_CON :
+
+  break;
+};
 
 }
 
+
+
+void clearDay(){
+  for(uint8_t i = 6; i <= 16; i++){ lcd.setCursor(i,0); lcd.print(" "); }
+}
+
+void clearJadwal(){
+  for(uint8_t i = 0; i <= 12; i++){ lcd.setCursor(i,1); lcd.print(" "); }
+}
+
+void clearAll(){
+  for(uint8_t i = 0; i <= 16; i++){ lcd.setCursor(i,0); lcd.print(" "); }
+  for(uint8_t i = 0; i <= 16; i++){ lcd.setCursor(i,1); lcd.print(" "); }
+}
+
+int TIMER(int limit,int Delay){
+  static uint32_t saveTimer =0;
+  uint32_t tmr = millis();
+  static uint8_t counter = 0,lastCounter = 0;
+
+  if((tmr - saveTimer) > Delay){
+    saveTimer = tmr;
+    
+    counter = (counter + 1) % limit; 
+    if(lastCounter != counter) clearDay(); lastCounter = counter;
+  }
+  return counter;
+}
+
+void Buzzer(uint8_t state)
+  {
+   
+    switch(state){
+      case 0 :
+        digitalWrite(BUZZ,HIGH);
+      break;
+      case 1 :
+        digitalWrite(BUZZ,LOW);
+      break;
+      case 2 :
+        for(int i = 0; i < 2; i++){
+          digitalWrite(BUZZ,LOW);
+          delay(80);
+          digitalWrite(BUZZ,HIGH);
+          delay(80);
+        }
+      break;
+    };
+  }
+
+  void dwCtr(int row, String Msg) {
+  int len = Msg.length();
+  int col = (16 - len) / 2;
+  if (col < 0) col = 0; // Cegah posisi negatif jika teks lebih dari 16 karakter
+  lcd.setCursor(col, row); // row: 0 untuk baris atas, 1 untuk baris bawah
+  lcd.print(Msg);
+}
 //----------------------------------------------------------------------
 // I2C_ClearBus menghindari gagal baca RTC (nilai 00 atau 165)
 

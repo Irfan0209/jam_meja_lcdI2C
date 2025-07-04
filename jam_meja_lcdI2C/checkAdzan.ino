@@ -1,9 +1,9 @@
 //================= cek waktu sholat ===================//
 void check() {
-    RtcDateTime now = Rtc.GetDateTime();
-    uint8_t jam = now.Hour();
-    uint8_t menit = now.Minute();
-    uint8_t detik = now.Second();
+//    RtcDateTime now = Rtc.GetDateTime();
+    uint8_t jam = hour();
+    uint8_t menit = minute();
+    uint8_t detik = second();
     int hours, minutes;
     static uint8_t counter = 0;
     static uint32_t lsTmr;
@@ -27,8 +27,8 @@ void check() {
                 sholatNow = counter;
                 adzan = 1;
                 reset_x = 1;
-                //show = ANIM_ADZAN;
-                list = 0;
+                show = ANIM_ADZAN;
+                //list = 0;
                 adzanFlag[counter] = true;
             }
         }
